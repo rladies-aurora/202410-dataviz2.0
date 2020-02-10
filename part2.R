@@ -149,7 +149,7 @@ scatter2 <- ggplot(a, aes(x = numGenes, y = meanLength)) +
   geom_text_repel(aes(label = Chr), color="red", segment.color="blue")
 scatter2
 
-## add cofidence interval
+## add confidence interval
 scatter2 <- ggplot(a, aes(x = numGenes, y = meanLength)) +
   geom_point()+
   theme_bw()+
