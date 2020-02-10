@@ -16,4 +16,4 @@
 - Janani Ravi
 
 ## Contact
-[eastlansing@rladies.org](mailto:eastlansing@rladies.org) | [rladies-eastlansing.slack.com](https://rladies-eastlansing.slack.com]
+[eastlansing@rladies.org](mailto:eastlansing@rladies.org) | [rladies-eastlansing.slack.com](https://rladies-eastlansing.slack.com)
