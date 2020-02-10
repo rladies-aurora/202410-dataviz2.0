@@ -62,7 +62,7 @@ ggarrange(scatter, scatter3,
           labels = c("A", "B"),
           ncol = 2, nrow = 1)
 
-## transformed the axes.. Thats better.. isny it?
+## transformed the axes.. Thats better.. isn't it?
 trans_scatter <- scatter +
   scale_x_log10("End-Start") +
   scale_y_log10("Gene length") +
@@ -76,7 +76,7 @@ scatter1 <- ggplot(gene_loc2, aes(x = log_EndStart, y = log_length, color=Chr)) 
   geom_smooth(method=lm,  se=FALSE)
 scatter1
 
-## We can see the lines clearly. Can you thing in a solution?
+## We can't see the lines clearly. Can you think of a solution?
 scatter2 <- ggplot(gene_loc2, aes(x = log_EndStart, y = log_length, color=Chr)) +
   geom_point(size =1, alpha = 0.2) +
   geom_smooth(method=lm, se=FALSE) +
@@ -96,7 +96,7 @@ scatter <- ggplot(gene_loc2, aes(x = log_EndStart, y = log_length, color = Chr))
   ggpubr::stat_cor()
 scatter
 
-## Now, lets add some numerical values to the graph. Linear quation
+## Now, lets add some numerical values to the graph. Linear equation
 scatter <- ggplot(gene_loc2, aes(x = log_EndStart, y = log_length, color = Chr))+
   geom_point() +
   geom_smooth(method = lm, se = FALSE)+
@@ -107,7 +107,7 @@ scatter
 ## multiple regression with equation and r2 different plots
 ml_scatter <- ggscatter(gene_loc2, x = "log_EndStart", y = "log_length",
   color = "Chr", palette = "jco",
-  add = "reg.line") +
+  add = "reg.line", add.params = list(color = "black") +
   facet_wrap(~Chr) +
   stat_cor(label.y = 4.4) +
   stat_regline_equation(label.y = 4.2)
