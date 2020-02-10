@@ -1,0 +1,347 @@
+---
+title: 'Part 1: Data Viz Review'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Visualizing tidy data w/ `ggplot`
+
+## Reviewing the basics of the Grammar of Graphics
+
+__Three main components:__
+
+- data `ggplot()`
+    - Tells ggplot which data object to use
+    - data.frame
+    - tibble
+- aesthetics `aes()` `aes =`
+    - Tells ggplot to know how to treat your data.
+    - x
+    - y
+    - can relate to parts of your data
+        - color (for lines, points, borders)
+        - fill  (for geometries that have borders and the inside can be another color)
+        - size  (AKA 'cex' in base R)
+        - shape (AKA 'pch' in base R)
+        - lty   (linetype)
+    - style (not typically linked to data)
+        - lwd (line width)
+        - alpha (transparency)
+    - extras (e.g. positioning text labels)
+        - vjust (relative vertical position from 0 to 1)
+        - hjust (relative horizontal position from 0 to 1)
+- geometry `geom_...`
+    - geom_point
+    - geom_line
+    - geom_bar
+    - geom_boxplot
+    - geom_violin
+    - geom_histogram
+    - geom_density
+    - geom_area
+    - geom_smooth
+    - extras for labeling
+        - geom_text
+        - geom_title
+    - extras for other purposes
+        - geom_abline
+    - **note** that aesthetics can be part of geometry, too.
+  
+
+## Basic plotting
+
+First, load packages we'll be using.
+
+```{r}
+# most simple to load the whole tidyverse
+  library(tidyverse)
+
+# if you're having trouble, these shuold be all you need:
+  #library(ggplot2)
+  #library(tidyr)
+```
+
+Next, load the data we'll be working with today (courtesy of [Janani Ravi and Arjun Krishnan](https://github.com/jananiravi/tidyverse-genomics)).
+
+```{r}
+# load the table in the data folder
+  gene_loc <- read.table("./data/GSE69360.gene-locations.txt", 
+                    header = T)
+```
+
+Quick inspection of the dataset.
+
+```{r}
+# get column names
+  colnames(gene_loc)
+
+# see first 5 rows
+  head(gene_loc)
+  
+# see last 5 rows
+  tail(gene_loc)
+```
+
+**Creating a plot w/ Grammar of Graphics**
+
+### Barplots & Histograms
+- `ggplot`, `factor`, `aes`
+- `geom_bar`, `geom_histogram`
+- `facet_wrap`
+- `scale_x_log10`, `labs`, `coord_flip`, `theme`, `theme_minimal`
+
+```{r ggplot-bars-hist, echo=T, eval=T}
+gene_loc %>%                              # data
+  ggplot(aes(x = Chr)) +                  # aesthetics: what to plot?
+  geom_bar()                              # geometry: how to plot?
+```
+
+This looks messy. The names are overlapping, and the order is not correct. Let's try making some adjustments.
+
+```{r}
+# convert the chromosome names to factors
+gene_loc$Chr <- factor(gene_loc$Chr,
+                       levels = paste("chr",
+                                      c((1:22), "X", "Y", "M"),
+                                      sep=""))
+
+# remember that you can assign names to ggplot objects
+plot_chr_numgenes <- gene_loc %>%
+                        ggplot(aes(x = Chr)) +
+                        geom_bar()
+plot_chr_numgenes
+```
+
+Still hard to read, so let's try rotating the axes.
+
+```{r}
+plot_chr_numgenes +      # load the previously-named ggplot object
+  coord_flip() +         # rotate the axes
+  theme_minimal()        # change to a white background
+```
+
+Let's say we want to the order to be reversed. We can also do that here.
+
+```{r}
+plot_chr_numgenes +      
+  coord_flip() +         
+  theme_minimal() +       
+  scale_x_discrete(limits = rev(levels(gene_loc$Chr))) # change the order
+```
+
+Label the axes and assign a title
+```{r}
+plot_chr_numgenes +
+  labs(title = "No. genes per chromosome",
+       x = "Chromosome",
+       y = "No. of genes") +
+  theme_minimal() +
+  coord_flip()+       
+  scale_x_discrete(limits = rev(levels(gene_loc$Chr))) 
+```
+
+We can also make other geometries, such as a histogram. 
+
+````{r}
+gene_loc %>%
+  ggplot(aes(x = Length)) +
+  geom_histogram(color = "white") + # color here is the  
+  scale_x_log10() +                 # put the histogram on the log scale
+  theme_minimal()
+```
+
+Next, we can separate the histograms into facets my chromosome name.
+
+```{r}
+# Create a facet grid using `facet_wrap()`.
+plot_chr_genelength <- gene_loc %>%              # assign a new ggplot object
+                          ggplot(aes(x = Length, fill = Chr)) +
+                          geom_histogram(color = "white") +
+                          scale_x_log10() +
+                          theme_minimal() +
+                          facet_wrap(~Chr, #sort facet by these data levels
+                                     scales = "free_y") #only y-axis can vary
+# view plot
+plot_chr_genelength
+```
+
+Because each facet grid is already labeled, we do not need to have a legend. We also can rotate the axes using `theme()` and `element_text()`.
+
+```{r}
+# remove legend and add labels
+plot_chr_genelength +
+  theme(legend.position = "none") +
+  labs(x = "Gene length (log-scale)",
+       y = "No. of genes") +
+  theme(axis.text.x = element_text(angle = 45, hjust = .75))
+```
+
+## A little more about aesthetics: Colors!
+
+### Global versus data-level color scales
+
+Notice that colors can be changed *globally* (i.e. all one color), or at the *data* level (factors, values).
+
+For example:
+
+`fill` here is at the data level (each facet has its own color). 
+
+```{r}
+gene_loc %>%
+  ggplot(aes(x = Length, fill = Chr)) + # FILL is at the DATA level
+  geom_histogram(color = "white") +
+  scale_x_log10() +
+  theme_minimal() +
+  facet_wrap(~Chr, scales = "free_y") +
+  theme(legend.position = "none") +
+  labs(x = "Gene length (log-scale)",
+       y = "No. of genes") +
+  theme(axis.text.x = element_text(angle = 45, hjust = .75))
+```
+
+`fill` here is at the global level (all facets colored the same).
+
+```{r}
+gene_loc %>%
+  ggplot(aes(x = Length)) + # FILL at the DATA level is REMOVED
+  geom_histogram(color = "white", fill="blue") + # FILL is now GLOBAL
+  scale_x_log10() +
+  theme_minimal() +
+  facet_wrap(~Chr, scales = "free_y") +
+  theme(legend.position = "none") +
+  labs(x = "Gene length (log-scale)",
+       y = "No. of genes") +
+  theme(axis.text.x = element_text(angle = 45, hjust = .75))
+```
+
+### Customized color scales
+
+You can use `scales` to customize your colors. Or, you can use them to match the level or categorical feature you mention in `aes(fill=...)` or `aes(color=...)`. In this sense, scales "talk" to the aesthetics functions and work hand-in-hand.
+
+Here are some to consider:
+
+- scale_color_manual/scale_fill_manual         (colorize by levels in the data)
+- scale_color_discrete/scale_fill_discrete     (categorical values)
+- scale_color_gradientn/scale_fill_gradientn   (gradient of n colors)
+- scale_color_gradient/scale_fill_gradient     (2-color gradient; low-high)
+- scale_color_gradient/scale_fill_gradient     (diverging 2-color gradient; low-mid-high)
+- scale_color_colorblind/scale_fill_colorblind (up to 8 colorblind-friendly colors)
+- scale_color_brewer/scale_fill_brewer         (based on color brewer)
+- scale_color_grey/scale_fill_grey             (grey colors)
+
+To use them, you need color palettes, such as these below:
+
+**Color palettes from <http://colorbrewer2.org>** (made by a geography student at MSU!)
+
+```{r}
+# load colorbrewer library
+library(RColorBrewer)
+```
+
+Check out the colors that they offer.
+
+```{r, fig.width=5, fig.height=8}
+# show all colors
+  display.brewer.all()
+```
+
+You can change the number according to how many colors you'd like to use to see what's available.
+
+```{r, fig.width=8, fig.height=8}
+# show side-by-side
+  par(mfrow=c(1,2))
+
+# show 3 colors
+  display.brewer.all(3)
+  
+# show for 10 colors
+  display.brewer.all(10)
+```
+
+Quick example using `scale_fill_manual()`:
+
+```{r}
+# Because we have more data levels than the colorbrewer colors, make a palette
+num_cols <- length(levels(gene_loc$Chr)) #get number of colors needed
+newcolors <- colorRampPalette(brewer.pal(10, "BrBG"))(num_cols) #select palette
+
+# make a new ggplot object with the basics (going to use later)
+num_genes_chr <- gene_loc %>%
+        ggplot(aes(x = Length, fill = Chr)) + # FILL is at the DATA level
+        geom_histogram(color = "white") +
+        scale_x_log10() +
+        theme_minimal() +
+        facet_wrap(~Chr, scales = "free_y") +
+        theme(legend.position = "none") +
+        labs(x = "Gene length (log-scale)",
+             y = "No. of genes") +
+        theme(axis.text.x = element_text(angle = 45, hjust = .75))
+  
+# add custom colors
+num_genes_chr +
+  scale_fill_manual(values = newcolors) # try values=rev(newcolors) too!
+```
+
+
+**Wes Anderson palettes, from the tumbler blog, <https://wesandersonpalettes.tumblr.com/>.**
+
+```{r}
+# load library
+  library(wesanderson)
+```
+
+```{r}
+# get names of movie color themes
+  names(wes_palettes)
+```
+
+```{r}
+# show side-by-side
+  par(mfrow=c(3,3))
+
+# print out a few to see what they look like
+  wes_palette("FantasticFox1")    #Fantastic Mr. Fox (2009)
+  wes_palette("Zissou1")          #The Life Aquatic with Steve Zissou (2004)
+  wes_palette("GrandBudapest1")   #The Grand Budapest Hotel (2014)
+  wes_palette("GrandBudapest2")   #The Grand Budapest Hotel (2014)
+  wes_palette("Darjeeling1")      #The Darjeeling Limited (2007)
+  wes_palette("Darjeeling2")      #The Darjeeling Limited (2007)
+  wes_palette("Royal1")           #The Royal Tenenbaums (2001)
+  wes_palette("Royal2")           #The Royal Tenenbaums (2001)
+  wes_palette("Moonrise1")        #Moonrise Kingdom (2012)
+```
+
+Quick example using one of these:
+
+```{r}
+newcolors <- wes_palette(name = "Zissou1", #select one of the color names
+                         n = num_cols,
+                         type = "continuous") #as opposed to "discrete"
+
+# add custom colors
+num_genes_chr +
+  scale_fill_manual(values = newcolors)
+```
+
+```{r}
+# another way to do it is within scale_fill_manual
+num_genes_chr +
+  scale_fill_manual(values = wes_palette(n=num_cols, name = 'Darjeeling1', type = "continuous"))
+```
+
+**Other color sources to check out**
+
+Color-blind-friendly colors from Paul Tol: 
+<https://personal.sron.nl/~pault/data/colourschemes.pdf>
+
+R color cheatsheet: <https://www.nceas.ucsb.edu/~frazier/RSpatialGuides/colorPaletteCheatsheet.pdf>
+
+Viridis color library:
+
+```{r}
+#install.packages("viridis")
+#library(viridis)
+```
