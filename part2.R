@@ -105,9 +105,9 @@ scatter
 
 ## Your boss wants to see the lines in different plots!
 ## multiple regression with equation and r2 different plots
-ml_scatter <- ggscatter(gene_loc2, x = "log_EndStart", y = "log_length",
-  color = "Chr", palette = "jco",
-  add = "reg.line", add.params = list(color = "black") +
+ml_scatter <- ggscatter(gene_loc2, x="log_EndStart", y="log_length",
+                        color = "Chr", palette = "jco",
+                        add = "reg.line", add.params = list(color = "black")) +
   facet_wrap(~Chr) +
   stat_cor(label.y = 4.4) +
   stat_regline_equation(label.y = 4.2)
