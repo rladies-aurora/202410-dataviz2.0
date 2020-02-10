@@ -4,8 +4,11 @@
 ## When to make a heatmap?
 ## When you have any two-dimensional matrix that you'd like to visualize!
 
+library(tidyverse)
+
+## Data import
 ## Reading in a subset of the gene count data | Chr22
-highvar_genes <- read_tsv("data/chr22-gene-logcpm.txt")
+highvar_genes <- read_tsv("chr22-gene-logcpm.txt")
 
 highvar_genes_df <- highvar_genes %>%
   select(Geneid, Sample, Logcpm) %>%
@@ -23,7 +26,7 @@ pheatmap(highvar_genes_df,
 
 ## OTHER WAYS to generate heatmaps
 ## Using heatmap3
-# library(heatmap3)
+library(heatmap3)
 heatmap3(highvar_genes_df)
 heatmap3(highvar_genes_df,
          col=brewer.pal(n=9, name="YlGn")) # go green!

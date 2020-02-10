@@ -68,7 +68,7 @@ Next, load the data we'll be working with today (courtesy of [Janani Ravi and Ar
 
 ```{r}
 # load the table in the data folder
-  gene_loc <- read.table("./data/GSE69360.gene-locations.txt", 
+  gene_loc <- read.table("GSE69360.gene-locations.txt", 
                     header = T)
 ```
 

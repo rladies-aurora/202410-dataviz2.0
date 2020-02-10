@@ -1,11 +1,14 @@
 ## DataViz 2.0 Workshop
 ## Part 2
 
-## Data Import ##
-gene_loc <- read.table("data/GSE69360.gene-locations.txt",
+library(tidyverse)
+library(ggpubr); library(ggrepel)
+
+## Data Import
+gene_loc <- read.table("GSE69360.gene-locations.txt",
                        header = T)
 
-## Plotting ##
+## Plotting
 scatter <- ggplot(gene_loc, aes(x=End-Start, y=Length, group=Chr, color=Chr)) +
   geom_point()
 scatter
