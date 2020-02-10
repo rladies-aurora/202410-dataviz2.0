@@ -3,7 +3,7 @@
 
 ## Learning objectives
 - Explore & Discover w/ [Data-to-viz.com](data-to-viz.com/) & [R-graph gallery](https://www.r-graph-gallery.com/)
-- Part 1: Review of ggplot2 (Grammar of Graphics, Colors, Themes, Scales, and more!)
+- Part 1: Review of `ggplot2` (Grammar of Graphics, Colors, Themes, Scales, and more!)
 - Part 2: More plotting w/ `ggplot2`, `ggpubr`, and `ggrepel` incl. regression
 - Part 3: Heatmaps w/ `pheatmap`, `heatmap3`, and `ggplot + geom_tile`
 - Part 4: Publication quality multi-panel plots w/ `ggpubr` and `cowplot`
