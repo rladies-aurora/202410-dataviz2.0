@@ -1,6 +1,5 @@
 ## Dataviz2.0 - part4
 install.packages("ggsci")
-install.packages("ggsci")
 install.packages("tidyverse")
 install.packages("ggpubr")
 install.packages("ggrepel")
@@ -12,7 +11,6 @@ library(tidyverse)
 library(ggpubr)
 library(ggrepel)
 library(cowplot)
-library(ggrepel)
 library(gridExtra)
 
 #Create the data
