@@ -58,7 +58,7 @@ box1 <- box1 + scale_color_jco()+
 ml_scatter <- ggscatter(gene_loc2, x = "log_EndStart", y = "log_length",
                         color = "Chr", palette = "jco",
                         add = "reg.line", add.params = list(color = "black"),    # customize regression line
-                        fullrange - TRUE) +
+                        fullrange = TRUE) +
   facet_wrap(~Chr) +
   stat_cor(label.y = 4.4) +
   stat_regline_equation(label.y = 4.2)
@@ -106,7 +106,7 @@ final_plt <- ggarrange(ml_scatter, box1, text.p + rremove ("x.text"),
 final_plt
 
 #Export plot
-ggexport(final_plt, filename = "gene_lth_viz.pdf", width = 200, height = 200)
+ggsave(mean_lth_viz.pdf, width = 5, height = 5, units = "in")
 
 
 # Place scatterplot together with density plot
@@ -143,10 +143,17 @@ scat_density_plt <- annotate_figure(fig_2,
 )
 
 scat_density_plt
+ggsave(marginal_distribution.pdf, width = 5, height = 5, units = "in")
 
 ################################
 #Insert a table into a plot
-#Regression plot summary data with labels & confidence interval
+#Regression plot summary data with labels & confidence interval made in part 2 using code below.
+
+a <- gene_loc %>%
+  group_by(Chr) %>%
+  summarize(meanLength = mean(Length), numGenes = n())
+head(a)
+
 scatter2 <- ggplot(a, aes(x = numGenes, y = meanLength)) +
   geom_point()+
   theme_bw()+
@@ -189,5 +196,11 @@ final_scatter2 <- annotate_figure(fig_4,
 final_scatter2
 
 #Export plot
-ggexport(final_scatter2, filename = "mean_length.pdf", width = 200, height = 200)
+ggsave(mean_length.pdf, width = 5, height = 5, units = "in")
 
+
+##References
+# http://www.sthda.com/english/articles/24-ggpubr-publication-ready-plots/78-perfect-scatter-plots-with-correlation-and-marginal-histograms/
+# http://www.sthda.com/english/articles/24-ggpubr-publication-ready-plots/81-ggplot2-easy-way-to-mix-multiple-graphs-on-the-same-page/#change-columnrow-span-of-a-plot
+# http://www.sthda.com/english/articles/24-ggpubr-publication-ready-plots/77-facilitating-exploratory-data-visualization-application-to-tcga-genomic-data/
+# http://www.sthda.com/english/wiki/be-awesome-in-ggplot2-a-practical-guide-to-be-highly-effective-r-software-and-data-visualization#blog-posts
