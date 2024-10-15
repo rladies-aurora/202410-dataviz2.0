@@ -15,11 +15,14 @@
 - [Older RLEL Presentations](https://github.com/rladies-eastlansing/meetup-presentations/)
 - Material adapted from the [Tidyverse for Genomics workshop](https://github.com/jananiravi/tidyverse-genomics) by Janani Ravi & Arjun Krishnan.
 
-## Workshop presenters
+## Thanks to today's presenter
+Aishwarya Mandava
+
+## Thanks to for the demo code
 - Veronica Frans
 - Julian Camilo Bello R
 - Camille Archer
 - Janani Ravi
 
 ## Contact
-[eastlansing@rladies.org](mailto:eastlansing@rladies.org) | [rladies-eastlansing.slack.com](https://rladies-eastlansing.slack.com)
+[aurora.colorado@rladies.org](mailto:aurora.colorado@rladies.org) | 
