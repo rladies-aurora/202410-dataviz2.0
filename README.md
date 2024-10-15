@@ -1,5 +1,5 @@
 # DataViz 2.0
-### Spring 2020 workshop
+### Fall 2024 workshop
 
 ## Learning objectives
 - Explore & Discover w/ [Data-to-viz.com](data-to-viz.com/) & [R-graph gallery](https://www.r-graph-gallery.com/)
@@ -25,4 +25,4 @@ Aishwarya Mandava
 - Janani Ravi
 
 ## Contact
-[aurora.colorado@rladies.org](mailto:aurora.colorado@rladies.org) | 
+[aurora.colorado@rladies.org](mailto:aurora.colorado@rladies.org) 
