@@ -1,0 +1,947 @@
+---
+title: "R-DataViz_2.0"
+output: 
+  html_document:
+    toc: true
+date: "2024-10-15"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+## Creating an R Markdown file
+
+- Useful resources to refer: https://rmarkdown.rstudio.com/authoring_quick_tour.html
+
+## ggplot introduction
+
+- R graph library: https://rmarkdown.rstudio.com/authoring_quick_tour.html
+
+- Why ggplot2? ggplot2 is an R package dedicated to data visualization. It can greatly improve the quality and aesthetics of your graphics, and will make you much more efficient in creating them. ggplot2 allows to build almost any type of chart.
+
+## File Management
+
+- create a project: organizes all files (data, output, scripts) related to a specific analysis within a dedicated folder, automatically setting the working directory to that folder when you open the project
+
+- you can set working directory: setting a working directory simply specifies the current location where R will look for files to read or save, without necessarily creating a structured project folder
+
+
+```{r}
+#setwd("path/to/project")
+```
+
+# Part1: Visualizing tidy data w/ `ggplot`
+
+## Reviewing the basics of the Grammar of Graphics
+
+__Three main components:__
+
+- data `ggplot()`
+    - Tells ggplot which data object to use
+    - data.frame
+    - tibble
+- aesthetics `aes()` `aes =`
+    - Tells ggplot to know how to treat your data.
+    - x
+    - y
+    - can relate to parts of your data
+        - color (for lines, points, borders)
+        - fill  (for geometries that have borders and the inside can be another color)
+        - size  (AKA 'cex' in base R)
+        - shape (AKA 'pch' in base R)
+        - lty   (linetype)
+    - style (not typically linked to data)
+        - lwd (line width)
+        - alpha (transparency)
+    - extras (e.g. positioning text labels)
+        - vjust (relative vertical position from 0 to 1)
+        - hjust (relative horizontal position from 0 to 1)
+- geometry `geom_...`
+    - geom_point
+    - geom_line
+    - geom_bar
+    - geom_boxplot
+    - geom_violin
+    - geom_histogram
+    - geom_density
+    - geom_area
+    - geom_smooth
+    - extras for labeling
+        - geom_text
+        - geom_title
+    - extras for other purposes
+        - geom_abline
+    - **note** that aesthetics can be part of geometry, too.
+  
+
+## Basic plotting
+
+First, load packages we'll be using.
+
+```{r}
+# most simple to load the whole tidyverse
+#install.packages("tidyverse")
+  library(tidyverse)
+
+# if you're having trouble, these should be all you need:
+  #library(ggplot2)
+  #library(tidyr)
+```
+
+Next, load the data we'll be working with today (courtesy of [Janani Ravi and Arjun Krishnan](https://github.com/jananiravi/tidyverse-genomics)).
+
+```{r}
+# load the table in the data folder
+  gene_loc <- read.table("GSE69360.gene-locations.txt", 
+                    header = T)
+```
+
+Quick inspection of the dataset.
+
+```{r}
+# get column names
+  colnames(gene_loc)
+
+# see first 5 rows
+  head(gene_loc)
+  
+# see last 5 rows
+  tail(gene_loc)
+```
+
+**Creating a plot w/ Grammar of Graphics**
+
+### Barplots & Histograms
+- `ggplot`, `factor`, `aes`
+- `geom_bar`, `geom_histogram`
+- `facet_wrap`
+- `scale_x_log10`, `labs`, `coord_flip`, `theme`, `theme_minimal`
+
+```{r ggplot-bars-hist, echo=T, eval=T}
+gene_loc %>%                              # data
+  ggplot(aes(x = Chr)) +                  # aesthetics: what to plot?
+  geom_bar()                              # geometry: how to plot?
+```
+
+This looks messy. The names are overlapping, and the order is not correct. Let's try making some adjustments.
+
+```{r}
+# convert the chromosome names to factors
+gene_loc$Chr <- factor(gene_loc$Chr,
+                       levels = paste("chr",
+                                      c((1:22), "X", "Y", "M"),
+                                      sep=""))
+
+# remember that you can assign names to ggplot objects
+plot_chr_numgenes <- gene_loc %>%
+                        ggplot(aes(x = Chr)) +
+                        geom_bar()
+plot_chr_numgenes
+```
+
+Still hard to read, so let's try rotating the axes.
+
+```{r}
+plot_chr_numgenes +      # load the previously-named ggplot object
+  coord_flip() +         # rotate the axes
+  theme_minimal()        # change to a white background
+```
+
+Let's say we want to the order to be reversed. We can also do that here.
+
+```{r}
+plot_chr_numgenes +      
+  coord_flip() +         
+  theme_minimal() +       
+  scale_x_discrete(limits = rev(levels(gene_loc$Chr))) # change the order
+```
+
+Label the axes and assign a title
+```{r}
+plot_chr_numgenes +
+  labs(title = "No. genes per chromosome",
+       x = "Chromosome",
+       y = "No. of genes") +
+  theme_minimal() +
+  coord_flip()+       
+  scale_x_discrete(limits = rev(levels(gene_loc$Chr))) 
+```
+
+We can also make other geometries, such as a histogram. 
+
+```{r}
+gene_loc %>%
+  ggplot(aes(x = Length)) +
+  geom_histogram(color = "white") + # color here is the  
+  scale_x_log10() +                 # put the histogram on the log scale
+  theme_minimal()
+```
+
+Next, we can separate the histograms into facets my chromosome name.
+
+```{r}
+# Create a facet grid using `facet_wrap()`.
+plot_chr_genelength <- gene_loc %>%              # assign a new ggplot object
+                          ggplot(aes(x = Length, fill = Chr)) +
+                          geom_histogram(color = "white") +
+                          scale_x_log10() +
+                          theme_minimal() +
+                          facet_wrap(~Chr, #sort facet by these data levels
+                                     scales = "free_y") #only y-axis can vary
+# view plot
+plot_chr_genelength
+```
+
+Because each facet grid is already labeled, we do not need to have a legend. We also can rotate the axes using `theme()` and `element_text()`.
+
+```{r}
+# remove legend and add labels
+plot_chr_genelength +
+  theme(legend.position = "none") +
+  labs(x = "Gene length (log-scale)",
+       y = "No. of genes") +
+  theme(axis.text.x = element_text(angle = 45, hjust = .75))
+```
+
+## A little more about aesthetics: Colors!
+
+### Global versus data-level color scales
+
+Notice that colors can be changed *globally* (i.e. all one color), or at the *data* level (factors, values).
+
+For example:
+
+`fill` here is at the data level (each facet has its own color). 
+
+```{r}
+gene_loc %>%
+  ggplot(aes(x = Length, fill = Chr)) + # FILL is at the DATA level
+  geom_histogram(color = "white") +
+  scale_x_log10() +
+  theme_minimal() +
+  facet_wrap(~Chr, scales = "free_y") +
+  theme(legend.position = "none") +
+  labs(x = "Gene length (log-scale)",
+       y = "No. of genes") +
+  theme(axis.text.x = element_text(angle = 45, hjust = .75))
+```
+
+`fill` here is at the global level (all facets colored the same).
+
+```{r}
+gene_loc %>%
+  ggplot(aes(x = Length)) + # FILL at the DATA level is REMOVED
+  geom_histogram(color = "white", fill="blue") + # FILL is now GLOBAL
+  scale_x_log10() +
+  theme_minimal() +
+  facet_wrap(~Chr, scales = "free_y") +
+  theme(legend.position = "none") +
+  labs(x = "Gene length (log-scale)",
+       y = "No. of genes") +
+  theme(axis.text.x = element_text(angle = 45, hjust = .75))
+```
+
+### Customized color scales
+
+You can use `scales` to customize your colors. Or, you can use them to match the level or categorical feature you mention in `aes(fill=...)` or `aes(color=...)`. In this sense, scales "talk" to the aesthetics functions and work hand-in-hand.
+
+Here are some to consider:
+
+- scale_color_manual/scale_fill_manual         (colorize by levels in the data)
+- scale_color_discrete/scale_fill_discrete     (categorical values)
+- scale_color_gradientn/scale_fill_gradientn   (gradient of n colors)
+- scale_color_gradient/scale_fill_gradient     (2-color gradient; low-high)
+- scale_color_gradient/scale_fill_gradient     (diverging 2-color gradient; low-mid-high)
+- scale_color_colorblind/scale_fill_colorblind (up to 8 colorblind-friendly colors)
+- scale_color_brewer/scale_fill_brewer         (based on color brewer)
+- scale_color_grey/scale_fill_grey             (grey colors)
+
+To use them, you need color palettes, such as these below:
+
+**Color palettes from <http://colorbrewer2.org>** (made by a geography student at MSU!)
+
+```{r}
+# load colorbrewer library
+library(RColorBrewer)
+```
+
+Check out the colors that they offer.
+
+```{r, fig.width=5, fig.height=8}
+# show all colors
+  display.brewer.all()
+```
+
+You can change the number according to how many colors you'd like to use to see what's available.
+
+```{r, fig.width=8, fig.height=8}
+# show side-by-side
+  par(mfrow=c(1,2))
+
+# show 3 colors
+  display.brewer.all(3)
+  
+# show for 10 colors
+  display.brewer.all(10)
+```
+
+Quick example using `scale_fill_manual()`:
+
+```{r}
+# Because we have more data levels than the colorbrewer colors, make a palette
+num_cols <- length(levels(gene_loc$Chr)) #get number of colors needed
+newcolors <- colorRampPalette(brewer.pal(10, "BrBG"))(num_cols) #select palette
+
+# make a new ggplot object with the basics (going to use later)
+num_genes_chr <- gene_loc %>%
+        ggplot(aes(x = Length, fill = Chr)) + # FILL is at the DATA level
+        geom_histogram(color = "white") +
+        scale_x_log10() +
+        theme_minimal() +
+        facet_wrap(~Chr, scales = "free_y") +
+        theme(legend.position = "none") +
+        labs(x = "Gene length (log-scale)",
+             y = "No. of genes") +
+        theme(axis.text.x = element_text(angle = 45, hjust = .75))
+  
+# add custom colors
+num_genes_chr +
+  scale_fill_manual(values = newcolors) # try values=rev(newcolors) too!
+```
+
+
+**Wes Anderson palettes, from the tumbler blog, <https://wesandersonpalettes.tumblr.com/>.**
+
+```{r}
+# load library
+  library(wesanderson)
+```
+
+```{r}
+# get names of movie color themes
+  names(wes_palettes)
+```
+
+```{r}
+# show side-by-side
+  par(mfrow=c(3,3))
+
+# print out a few to see what they look like
+  wes_palette("FantasticFox1")    #Fantastic Mr. Fox (2009)
+  wes_palette("Zissou1")          #The Life Aquatic with Steve Zissou (2004)
+  wes_palette("GrandBudapest1")   #The Grand Budapest Hotel (2014)
+  wes_palette("GrandBudapest2")   #The Grand Budapest Hotel (2014)
+  wes_palette("Darjeeling1")      #The Darjeeling Limited (2007)
+  wes_palette("Darjeeling2")      #The Darjeeling Limited (2007)
+  wes_palette("Royal1")           #The Royal Tenenbaums (2001)
+  wes_palette("Royal2")           #The Royal Tenenbaums (2001)
+  wes_palette("Moonrise1")        #Moonrise Kingdom (2012)
+```
+
+Quick example using one of these:
+
+```{r}
+newcolors <- wes_palette(name = "Zissou1", #select one of the color names
+                         n = num_cols,
+                         type = "continuous") #as opposed to "discrete"
+
+# add custom colors
+num_genes_chr +
+  scale_fill_manual(values = newcolors)
+```
+
+```{r}
+# another way to do it is within scale_fill_manual
+num_genes_chr +
+  scale_fill_manual(values = wes_palette(n=num_cols, name = 'Darjeeling1', type = "continuous"))
+```
+
+**Other color sources to check out**
+
+Color-blind-friendly colors from Paul Tol: 
+<https://personal.sron.nl/~pault/data/colourschemes.pdf>
+
+R color cheatsheet: <https://www.nceas.ucsb.edu/~frazier/RSpatialGuides/colorPaletteCheatsheet.pdf>
+
+Viridis color library:
+
+```{r}
+#install.packages("viridis")
+#library(viridis)
+```
+
+
+# Part2: Arrange multiple ggplot objects on a page
+
+```{r}
+library(ggpubr)
+library(ggrepel)
+```
+
+```{r}
+scatter <- ggplot(gene_loc, aes(x=End-Start, y=Length, group=Chr, color=Chr)) +
+  geom_point()
+scatter
+```
+
+- It is hard to visualize the entire data.
+
+- Let's pretend we are only interested in a small set of chromosomes.
+
+- Let's subset the data and add a few variables!
+
+```{r}
+target <- c("chrX", "chrY", "chrM", "chr17")
+gene_loc2 <- filter(gene_loc, Chr %in% target)
+
+log_EndStart <- log10(gene_loc2$End-gene_loc2$Start)
+log_length <- log10(gene_loc2$Length)
+gene_loc2$log_length <- log_length
+gene_loc2$log_EndStart <- log_EndStart
+head(gene_loc2)
+```
+- Now let's check the new scatter plot... mmm still not the best
+
+```{r}
+scatter <- ggplot(gene_loc2, aes(x = End-Start, y = Length, group=Chr, color=Chr)) +
+  geom_point()
+scatter
+```
+
+- the gray background is annoying... remove it!
+
+```{r}
+scatter <- ggplot(gene_loc2, aes(x = End-Start, y = Length, group=Chr, color=Chr)) +
+  geom_point() +
+  theme_bw()
+scatter
+```
+
+- recap, try a different geometry .. by yourself!
+
+```{r}
+box1 <- ggplot(gene_loc2, aes(x = Chr, y = Length, group=Chr, color=Chr)) +
+  geom_boxplot() +
+  theme_bw()
+box1
+```
+
+- adjust the axes
+
+```{r}
+scatter <- ggplot(gene_loc2 ,aes(x = End-Start, y = Length, group=Chr, color=Chr)) +
+  geom_point() +
+  theme_bw() +
+  xlim(0, 2500)+ ylim(0, 10000)
+scatter
+```
+
+- where are the green dots?
+
+```{r}
+scatter3 <- ggplot(gene_loc2 ,aes(x = End-Start, y = Length, group=Chr, color=Chr)) +
+  geom_point(alpha = 0.7, size =0.5) +
+  theme_bw() +
+  xlim(0, 2500)+ ylim(0, 10000)
+scatter3
+```
+
+- Did it change? compare the plots side-by-side
+
+```{r}
+ggarrange(scatter, scatter3,
+          labels = c("A", "B"),
+          ncol = 2, nrow = 1)
+```
+
+- transformed the axes.. Thats better.. isn't it?
+
+```{r}
+trans_scatter <- scatter +
+  scale_x_log10("End-Start") +
+  scale_y_log10("Gene length") +
+  theme_minimal()
+trans_scatter
+```
+
+- You want to add the regression lines.. So, lets do a multiple regression
+
+```{r}
+scatter1 <- ggplot(gene_loc2, aes(x = log_EndStart, y = log_length, color=Chr)) +
+  geom_point() +
+  theme_bw() +
+  geom_smooth(method=lm,  se=FALSE)
+scatter1
+```
+
+- We can't see the lines clearly. Can you think of a solution?
+
+```{r}
+scatter2 <- ggplot(gene_loc2, aes(x = log_EndStart, y = log_length, color=Chr)) +
+  geom_point(size =1, alpha = 0.2) +
+  geom_smooth(method=lm, se=FALSE) +
+  theme_bw()
+scatter2
+```
+
+- Can you put them together in the same graph to compare?
+
+```{r}
+ggarrange(scatter1, scatter2,
+          labels = c("A", "B"),
+          ncol = 2, nrow = 1)
+```
+
+- Now, lets add some numerical values to the graph. Like R^2
+
+```{r}
+scatter <- ggplot(gene_loc2, aes(x = log_EndStart, y = log_length, color = Chr))+
+  geom_point() +
+  theme_bw() +
+  geom_smooth(method = lm, se = FALSE)+
+  ggpubr::stat_cor()
+scatter
+```
+
+- Now, lets add some numerical values to the graph. Linear equation
+
+```{r}
+scatter <- ggplot(gene_loc2, aes(x = log_EndStart, y = log_length, color = Chr))+
+  geom_point() +
+  geom_smooth(method = lm, se = FALSE)+
+  ggpubr::stat_regline_equation()
+scatter
+```
+
+- Your boss wants to see the lines in different plots!
+
+- multiple regression with equation and r2 different plots
+
+```{r}
+ml_scatter <- ggscatter(gene_loc2, x="log_EndStart", y="log_length",
+                        color = "Chr", palette = "jco",
+                        add = "reg.line", add.params = list(color = "black")) +
+  facet_wrap(~Chr) +
+  stat_cor(label.y = 4.4) +
+  stat_regline_equation(label.y = 4.2)
+ml_scatter
+```
+
+- labeling a point in a scatterplot..
+
+```{r}
+scatter <- ggplot(gene_loc2 ,aes(x = End-Start, y = Length, group=Chr, color=Chr)) +
+  geom_point()
+scatter
+```
+
+- that gene in the corner looks interesting!! What gene is it?
+
+```{r}
+scatter <- ggplot(gene_loc2, aes(x = End-Start, y = Length, group=Chr, color=Chr)) +
+  geom_point()+
+  geom_text(label=gene_loc2$Geneid, size = 2, color="black")
+scatter
+```
+
+- second example!! Labeling point and adding confidence interval to a regression.
+
+```{r}
+a <- gene_loc %>%
+  group_by(Chr) %>%
+  summarize(meanLength = mean(Length), numGenes = n())
+head(a)
+```
+
+```{r}
+scatter2 <- ggplot(a, aes(x = numGenes, y = meanLength)) +
+  geom_point()+
+  theme_bw()
+scatter2
+```
+
+- which chromosome is represented by which point?
+
+```{r}
+scatter2 <- ggplot(a, aes(x = numGenes, y = meanLength)) +
+  geom_point()+
+  theme_bw()+
+  geom_text(label=a$Chr, size = 2, color="black")
+scatter2
+```
+
+- geom_text_repel is a better function!
+
+```{r}
+scatter2 <- ggplot(a, aes(x = numGenes, y = meanLength)) +
+  geom_point()+
+  theme_bw()+
+  geom_text_repel(aes(label = Chr), color="red", segment.color="blue")
+scatter2
+```
+
+- add confidence interval
+
+```{r}
+scatter2 <- ggplot(a, aes(x = numGenes, y = meanLength)) +
+  geom_point()+
+  theme_bw()+
+  geom_text_repel(aes(label = Chr), color="red", segment.color="blue")+
+  geom_smooth(method = loess, color = "lightblue", alpha = 0.1)
+scatter2
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Part3: Heatmap
+
+- Data import
+
+- Reading in a subset of the gene count data | Chr22
+
+```{r}
+highvar_genes <- read_tsv("chr22-gene-logcpm.txt")
+```
+
+```{r}
+highvar_genes_df <- highvar_genes %>%
+  select(Geneid, Sample, Logcpm) %>%
+  spread(Sample, Logcpm) %>%
+  column_to_rownames(var="Geneid") %>%
+  as.data.frame()
+```
+
+- using pheatmap
+
+```{r}
+library(pheatmap); library(RColorBrewer)
+```
+
+```{r}
+pheatmap(highvar_genes_df, cluster_rows=F, cluster_cols=F)
+pheatmap(highvar_genes_df)
+pheatmap(highvar_genes_df,
+         color=brewer.pal(n=9, name="YlGnBu"), # changing cell colors
+         border_color="grey90") # changing border colors
+```
+
+- OTHER WAYS to generate heatmaps
+- Using heatmap3
+
+```{r}
+library(heatmap3)
+```
+
+```{r}
+heatmap3(highvar_genes_df)
+heatmap3(highvar_genes_df,
+         col=brewer.pal(n=9, name="YlGn")) # go green!
+```
+
+- Heatmap using ggplot and geom_tile
+
+- works with tidy data format
+
+```{r}
+highvar_genes$Sample <- factor(highvar_genes$Sample)
+
+ggplot(data=highvar_genes,
+       aes(x=Sample, y=Geneid, fill=Logcpm)) +
+  geom_tile(size=0.3) + ## to create heatmap
+  scale_fill_gradient(low="white", high="darkred") + # color spec
+  #scale_fill_distiller(palette = "YlGnBu") + # if using RColorBrewer
+  scale_x_discrete(position="top") + # legend position
+  theme_minimal() + #coord_flip() +
+  theme(axis.text.x=element_text(angle=90,hjust=0,vjust=0.5))
+```
+
+- can use hclust for clustering
+
+- can use ggdendro to add dendrograms
+
+
+# Part4: More on Combining multiple plots into one
+
+```{r}
+#install.packages("ggsci")
+#install.packages("tidyverse")
+#install.packages("ggpubr")
+#install.packages("ggrepel")
+#install.packages("cowplot")
+#install.packages("gridExtra")
+
+library(ggsci)
+library(tidyverse)
+library(ggpubr)
+library(ggrepel)
+library(cowplot)
+library(gridExtra)
+```
+
+- Read the data
+
+- We'll use the plots you've already created in part3: box1, ml_scatter, scatter2
+
+```{r}
+## Data Import
+gene_loc <- read.table("GSE69360.gene-locations.txt",
+                       header = T)
+```
+
+```{r}
+## Plotting the data
+scatter <- ggplot(gene_loc, aes(x=End-Start, y=Length, group=Chr, color=Chr)) +
+  geom_point()
+scatter
+```
+
+- It is hard to visualize the entire data.
+
+- Let's pretend we are only interested in a small set of chromosomes.
+
+- Let's subset the data and add a few variables!
+
+```{r}
+target <- c("chrX", "chrY", "chrM", "chr17")
+gene_loc2 <- filter(gene_loc, Chr %in% target)
+
+log_EndStart <- log10(gene_loc2$End-gene_loc2$Start)
+log_length <- log10(gene_loc2$Length)
+gene_loc2$log_length <- log_length
+gene_loc2$log_EndStart <- log_EndStart
+head(gene_loc2)
+```
+###################################################
+
+-- Combine boxplot and regression plot previously created
+
+```{r}
+### Boxplot
+box1 <- ggplot(gene_loc2, aes(x = Chr, y = Length,
+                              group=Chr, color=Chr)) +
+  geom_boxplot() +
+  xlab("Chr")+
+  theme_bw()
+
+box1 <- box1 + scale_color_jco()+
+  theme(legend.position = "none")                 # remove legend
+#box1 + scale_fill_discrete(name = "Chromosome")  #rename legend
+```
+
+- Scatterplot + regression line
+
+```{r}
+
+ml_scatter <- ggscatter(gene_loc2, x = "log_EndStart", y = "log_length",
+                        color = "Chr", palette = "jco",
+                        add = "reg.line", add.params = list(color = "black"),    # customize regression line
+                        fullrange = TRUE) +
+  facet_wrap(~Chr) +
+  stat_cor(label.y = 4.4) +
+  stat_regline_equation(label.y = 4.2)
+ml_scatter
+```
+
+- arrange facet grid as 1x4
+
+```{r}
+ml_scatter <- ml_scatter + facet_grid(cols = vars(Chr))
+
+#Arranging boxplot and scatterplot on one page
+## we’ll use the function ggarrange()[in ggpubr], which is a wrapper around the function plot_grid() [in cowplot package].
+## Compared to the standard function plot_grid(), ggarange() can arrange multiple ggplots over multiple pages.
+## use either
+
+fig <- ggarrange(ml_scatter, box1 + rremove ("x.text"),
+                  labels = c("A", "B"),
+                  ncol =1, nrow = 2,
+                 common.legend = TRUE)
+fig
+
+```
+
+- Annotate the arranged figure
+
+```{r}
+annotate_figure(fig,
+                             top = text_grob("Visualizing gene length", color = "red", face = "bold", size = 14),  #grob -- graphical object
+                             bottom = text_grob("Data source: \n gse69360 data set", color = "blue",         #customize text
+                                                hjust = 1, x = 1, face = "italic", size = 10),             # horizontal justification: 0= left align, 1= right align
+                             left = text_grob("Figure arranged using ggpubr", color = "green", rot = 90),   # rot = angle to rotate the text
+                             right = "I'm done, thanks :-)!",
+                             fig.lab = "Figure 1", fig.lab.face = "bold"
+)
+```
+
+
+- Adding descriptive text
+
+- Text to be added
+
+```{r}
+text <- paste("gse69360 data set is a resource of ribosomal",
+              "RNA-depleted RNA-Seq data from different normal",
+              "adults and fetal human tissues. The dataset was first",
+              "published in https://www.nature.com/articles/sdata201563", sep = " ")
+text.p <- ggparagraph(text = text, face = "italic", size = 11, color = "black")
+
+final_plt <- ggarrange(ml_scatter, box1, text.p + rremove ("x.text"),
+                 labels = c("A", "B"),
+                 ncol =1, nrow = 3,
+                 common.legend = TRUE)
+final_plt
+```
+
+- Export plot
+
+```{r}
+ggsave("mean_lth_viz.pdf", width = 5, height = 5, units = "in")
+```
+
+- Place scatterplot together with density plot
+
+- Scatter plot colored by groups ("Chr")
+
+```{r}
+sp <- gene_loc2 %>%
+  ggscatter("log_EndStart", "log_length",
+            color = "Chr", palette = "jco",
+            size = 1, alpha = 0.2)+
+  border()
+```
+
+- Marginal density plot of x (top panel) and y (right panel)
+
+```{r}
+xplot <- gene_loc2 %>%
+  ggdensity("log_EndStart", fill = "Chr", palette = "jco")
+
+yplot <- gene_loc2 %>%
+  ggdensity("log_length", fill = "Chr", palette = "jco")+
+  rotate()
+```
+
+- Cleaning the plots
+
+```{r}
+yplot <- yplot + clean_theme()
+xplot <- xplot + clean_theme()
+```
+
+- Arranging the plot
+
+```{r}
+fig_2 <- ggarrange(xplot, NULL, sp, yplot,
+          ncol = 2, nrow = 2,  align = "hv",
+          widths = c(2, 1), heights = c(1, 2),
+          common.legend = TRUE)
+```
+
+- Annotating the plot
+
+```{r}
+scat_density_plt <- annotate_figure(fig_2,
+                             top = text_grob("Scatter plot with marginal density", color = "red", face = "bold", size = 14),  #grob -- graphical object
+                             bottom = text_grob("Data source: \n gse69360 data set", color = "blue",         #customize text
+                                                hjust = 1, x = 1, face = "italic", size = 10),             # horizontal justification: 0= left align, 1= right align
+                             left = text_grob("Figure arranged using ggpubr", color = "green", rot = 90),   # rot = angle to rotate the text
+                             right = "I'm done, thanks :-)!",
+                             fig.lab = "Figure 1", fig.lab.face = "bold"
+)
+
+scat_density_plt
+ggsave("marginal_distribution.pdf", width = 5, height = 5, units = "in")
+```
+
+
+- Insert a table into a plot
+
+- Regression plot summary data with labels & confidence interval made in part 2 using code below.
+
+```{r}
+a <- gene_loc %>%
+  group_by(Chr) %>%
+  summarize(meanLength = mean(Length), numGenes = n())
+head(a)
+```
+
+```{r}
+scatter2 <- ggplot(a, aes(x = numGenes, y = meanLength)) +
+  geom_point()+
+  theme_bw()+
+  geom_text_repel(aes(label = Chr), color="red", segment.color="blue")+
+  geom_smooth(method = loess, color = "lightblue", alpha = 0.1)
+scatter2
+```
+
+- Compute descriptive statistics by groups
+
+```{r}
+stable <- gene_loc2 %>%
+  desc_statby(measure.var = "Length",             #Column containing variable to be sumarized
+              grps = "Chr")                       # Group
+stable <- stable[, c("Chr", "length", "mean", "sd")]
+```
+
+- Summary table plot, medium blue theme
+
+```{r}
+stable.p <- ggtexttable(stable, rows = NULL,
+                        theme = ttheme("mBlue"))
+```
+
+- Arranging the plot
+
+```{r}
+fig_3 <- ggarrange(scatter2, stable.p, text.p + rremove ("x.text"),
+                   ncol =1, nrow = 3,
+                   heights = c(1, 0.5, 0.2),
+                   common.legend = TRUE)
+fig_3
+```
+
+- Place the table within the plot using annotate_custom in ggplot
+
+```{r}
+fig_4 <- scatter2 + annotation_custom(ggplotGrob(stable.p),
+                                      xmin = 2000, ymax = 1500,
+                                      xmax = 5000)
+```
+
+- Annotating the plot
+
+```{r}
+final_scatter2 <- annotate_figure(fig_4,
+                                  top = text_grob("Scatter plot with summary table", color = "red", face = "bold", size = 14),  #grob -- graphical object
+                                  bottom = text_grob("Data source: \n gse69360 data set", color = "blue",         #customize text
+                                                     hjust = 1, x = 1, face = "italic", size = 10),             # horizontal justification: 0= left align, 1= right align
+                                  left = text_grob("Figure arranged using ggpubr", color = "green", rot = 90),   # rot = angle to rotate the text
+                                  right = "I'm done, thanks :-)!",
+                                  fig.lab = "Figure 1", fig.lab.face = "bold"
+)
+
+final_scatter2
+```
+
+- Export plot
+
+```{r}
+#Export plot
+ggsave("mean_length.pdf", width = 5, height = 5, units = "in")
+
+```
